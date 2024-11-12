@@ -18,12 +18,12 @@ def test_decode_response():
 
 def _encode_request(command: str) -> bytes:
     msg = Codec12(type=Codec12Type.REQUEST, content=command)
-    return msg.to_message().encode()
+    return msg.to_frame().encode()
 
 
 def _decode_request(data: bytes) -> str:
     frame = MessageFrame.decode(data)
     assert frame.codec_id == CodecId.CODEC_12
-    msg = Codec12.from_message(frame)
+    msg = Codec12.from_frame(frame)
     assert msg.type == Codec12Type.RESPONSE
     return msg.content

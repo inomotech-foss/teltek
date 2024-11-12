@@ -40,11 +40,11 @@ class Codec12:
         content = body[6 : 6 + content_len].decode("utf-8")
         return cls(type=type, content=content)
 
-    def to_message(self) -> MessageFrame:
+    def to_frame(self) -> MessageFrame:
         return MessageFrame.build(CodecId.CODEC_12, self.encode())
 
     @classmethod
-    def from_message(cls, msg: MessageFrame) -> Self:
-        if msg.codec_id != CodecId.CODEC_12:
-            raise CodecException(f"expected codec12 but got {msg.codec_id}")
-        return cls.decode(msg.data)
+    def from_frame(cls, frame: MessageFrame) -> Self:
+        if frame.codec_id != CodecId.CODEC_12:
+            raise CodecException(f"expected codec12 but got {frame.codec_id}")
+        return cls.decode(frame.data)
