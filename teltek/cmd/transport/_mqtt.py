@@ -6,6 +6,7 @@ from typing import Self, cast
 import parse  # type: ignore
 from aiomqtt import Client
 
+from teltek.cmd._device_id import DeviceId
 from teltek.cmd.transport._abc import Transport
 from teltek.codec import Codec12, Codec12Type, CodecId, MessageFrame
 
@@ -47,7 +48,11 @@ class MqttTransport(Transport):
         self._pending_requests.clear()
         self._subscribed_imeis.clear()
 
-    async def run_command(self, imei: str, command: str) -> str:
+    async def run_command(self, device_id: DeviceId, command: str) -> str:
+        assert device_id.imei is not None, "IMEI required"
+        return await self._run_command_imei(device_id.imei, command)
+
+    async def _run_command_imei(self, imei: str, command: str) -> str:
         assert imei not in self._pending_requests
 
         command_topic = self._get_command_topic(imei)
@@ -87,7 +92,7 @@ class MqttTransport(Transport):
             imei = cast(str, res["imei"])
 
             fut = self._pending_requests.get(imei)
-            if fut is None:
+            if fut is None or fut.done():
                 continue
             try:
                 frame = MessageFrame.decode(msg.payload)  # type: ignore

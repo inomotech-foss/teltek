@@ -3,6 +3,7 @@ import logging
 import math
 from collections.abc import Iterable
 
+from teltek.cmd._device_id import DeviceId
 from teltek.cmd.transport import Transport
 
 _LOGGER = logging.getLogger(__name__)
@@ -12,7 +13,9 @@ class CommandClient:
     def __init__(self, transport: Transport) -> None:
         self._transport = transport
 
-    async def get_params(self, imei: str, param_ids: Iterable[int]) -> dict[int, str]:
+    async def get_params(
+        self, device_id: DeviceId, param_ids: Iterable[int]
+    ) -> dict[int, str]:
         batch_size = math.ceil(self._transport.max_command_len / 8)
 
         params: dict[int, str] = {}
@@ -23,13 +26,15 @@ class CommandClient:
 
         for i, batch in enumerate(itertools.batched(param_ids, batch_size)):
             _LOGGER.debug("getting batch %d/%s", i + 1, batch_count)
-            batch_params = await self._get_params_batch(imei, *batch)
+            batch_params = await self._get_params_batch(device_id, *batch)
             params.update(batch_params)
         return params
 
-    async def _get_params_batch(self, imei: str, *param_ids: int) -> dict[int, str]:
+    async def _get_params_batch(
+        self, device_id: DeviceId, *param_ids: int
+    ) -> dict[int, str]:
         response = await self.run_command(
-            imei, "getparam " + ";".join(map(str, param_ids))
+            device_id, "getparam " + ";".join(map(str, param_ids))
         )
         params: dict[int, str] = {}
         raw_params = response.split(";")
@@ -48,14 +53,16 @@ class CommandClient:
 
         return params
 
-    async def run_command(self, imei: str, command: str, *, retry: int = 2) -> str:
+    async def run_command(
+        self, device_id: DeviceId, command: str, *, retry: int = 2
+    ) -> str:
         assert retry >= 0
         last_exc: Exception | None = None
         for _ in range(retry + 1):
             if last_exc:
                 _LOGGER.warning("retrying command")
             try:
-                return await self._transport.run_command(imei, command)
+                return await self._transport.run_command(device_id, command)
             except Exception as exc:
                 last_exc = exc
         assert last_exc is not None
