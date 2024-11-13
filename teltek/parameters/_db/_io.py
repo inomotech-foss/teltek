@@ -467,16 +467,6 @@ _ICCID = ParameterGroup(
     ],
 )
 
-# this is just a random group of parameters in the table...
-_UNKNOWN = ParameterGroup(
-    key="unknown",
-    name="Unknown group",
-    parameters=[
-        send_sms_to(7135),
-        sms_text(8135, default_value="Send SMS"),
-    ],
-)
-
 _ECO_SCORE = ParameterGroup(
     key="eco_score",
     name="Eco Score",
@@ -549,7 +539,6 @@ IO = ParameterGroup(
         _AXIS_Y,
         _AXIS_Z,
         _ICCID,
-        _UNKNOWN,
         _ECO_SCORE,
         _BATTERY_LEVEL,
         _BT_STATUS,
