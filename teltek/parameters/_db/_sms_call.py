@@ -1,4 +1,4 @@
-from ._parameter import (
+from teltek.parameters._parameter import (
     Parameter,
     ParameterGroup,
     ParameterIdRange,

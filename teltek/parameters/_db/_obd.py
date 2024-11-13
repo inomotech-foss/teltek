@@ -1,6 +1,6 @@
 import functools
 
-from teltek.parameters._io import (
+from teltek.parameters._db._io import (
     event_only,
     high_level,
     low_level,
