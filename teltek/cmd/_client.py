@@ -46,15 +46,23 @@ class CommandClient:
 
         # first param is special: Param ID:1000 Value:300
         first_param = raw_params[0]
-        param_id = first_param[9:]
-        param_id, _, param_value = param_id.partition(" ")
-        param_value = param_value[6:]
-        params[int(param_id)] = param_value
+        first_param = first_param[9:]
+        try:
+            param_id, _, param_value = first_param.partition(" ")
+            param_value = param_value[6:]
+            param_id = int(param_id)
+        except ValueError as exc:
+            raise ValueError(f"Failed to parse first param {first_param:r}") from exc
+        params[param_id] = param_value
 
         # others are: 10000:60
         for rest_param in raw_params[1:]:
-            param_id, _, param_value = rest_param.partition(":")
-            params[int(param_id)] = param_value
+            try:
+                param_id, _, param_value = rest_param.partition(":")
+                param_id = int(param_id)
+            except ValueError as exc:
+                raise ValueError(f"Failed to parse param {rest_param:r}") from exc
+            params[param_id] = param_value
 
         return params
 

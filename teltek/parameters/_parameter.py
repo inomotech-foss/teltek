@@ -64,7 +64,7 @@ class ParameterType(enum.StrEnum):
             return ""
         return str(value)
 
-    def max_raw_len(self, max_value: Any) -> int:
+    def max_raw_len(self, max_value: int | float) -> int:
         match self:
             case (
                 ParameterType.U8
@@ -83,8 +83,8 @@ class ParameterType(enum.StrEnum):
 
 @dataclasses.dataclass(frozen=True)
 class ValueRange:
-    min: float | int | str
-    max: float | int | str
+    min: float | int
+    max: float | int
 
 
 @dataclasses.dataclass(frozen=True)
