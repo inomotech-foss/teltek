@@ -27,7 +27,7 @@ _GREEN_DRIVING = ParameterGroup(
         Parameter(
             key="max_acceleration",
             id=11004,
-            type=ParameterType.U8,
+            type=ParameterType.DOUBLE,
             default_value=2.5,
             value_range=ValueRange(0.5, 10),
             name="Max acceleration",
@@ -35,7 +35,7 @@ _GREEN_DRIVING = ParameterGroup(
         Parameter(
             key="max_braking",
             id=11005,
-            type=ParameterType.U8,
+            type=ParameterType.DOUBLE,
             default_value=2.7,
             value_range=ValueRange(0.5, 10),
             name="Max braking",
@@ -43,7 +43,7 @@ _GREEN_DRIVING = ParameterGroup(
         Parameter(
             key="max_cornering",
             id=11006,
-            type=ParameterType.U8,
+            type=ParameterType.DOUBLE,
             default_value=3.4,
             value_range=ValueRange(0.5, 10),
             name="Max cornering",

@@ -203,11 +203,12 @@ _CRASH_DETECTION = ParameterGroup(
             id=11406,
             type=ParameterType.U8,
             default_value=0,
-            value_range=ValueRange(0, 1),
+            value_range=ValueRange(0, 2),
             name="Crash trace",
             value_map=[
                 ValueMapping("DISABLE", 0, "Disable"),
-                ValueMapping("ENABLE", 1, "Enable"),
+                ValueMapping("TRACE_CHANGES", 1, "Enable"),
+                ValueMapping("TRACE_FULL", 2, "Trace full"),
             ],
         ),
         Parameter(

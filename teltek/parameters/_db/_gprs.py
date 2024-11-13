@@ -96,11 +96,12 @@ _PARAMETERS3: list[Parameter] = [
         id=2006,
         type=ParameterType.U8,
         default_value=1,
-        value_range=ValueRange(0, 1),
+        value_range=ValueRange(0, 3),
         name="Protocol",
         value_map=[
             ValueMapping("TCP", 0, "TCP"),
             ValueMapping("UDP", 1, "UDP"),
+            ValueMapping("MQTT", 3, "UDP"),
         ],
     ),
 ]

@@ -126,11 +126,12 @@ _PARAMETERS1: list[Parameter] = [
         id=113,
         type=ParameterType.U8,
         default_value=0,
-        value_range=ValueRange(0, 1),
+        value_range=ValueRange(0, 4),
         name="Protocol Settings",
         value_map=[
             ValueMapping("CODEC_8", 0, "Codec 8"),
             ValueMapping("CODEC_8_EXT", 1, "Codec 8 Extended"),
+            ValueMapping("CODEC_AWS_JSON", 4, "Codec AWS JSON"),
         ],
     ),
 ]
