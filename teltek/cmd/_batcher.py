@@ -51,6 +51,48 @@ def iter_param_batches(
             batch_len += additional_len_required
 
 
+def iter_set_param_batches(
+    params: Iterable[tuple[int, str]], max_command_len: int
+) -> Iterator[dict[int, str]]:
+    batch: dict[int, str] = {}
+    batch_len = 0
+
+    # the response is always longer: New value 2001:wap2;2002:user;2003:pass
+    resp_overhead_len = len("New value  ")
+
+    params = iter(params)
+    while True:
+        try:
+            param_id, param_raw = next(params)
+        except StopIteration:
+            if batch:
+                yield batch
+            break
+
+        # for every parameter we add ";{id}:{value}"
+        additional_len_required = 2 + len(str(param_id)) + len(param_raw)
+
+        if resp_overhead_len + batch_len + additional_len_required > max_command_len:
+            # no more room in current batch
+            if batch:
+                yield batch
+            else:
+                _LOGGER.warning(
+                    "parameter %s itself exceeds max_command_len (%s > %s), returning on its own",
+                    param_id,
+                    additional_len_required,
+                    max_command_len,
+                )
+                yield {param_id: param_raw}
+            # start new batch
+            batch = {param_id: param_raw}
+            batch_len = additional_len_required
+        else:
+            # add to current batch
+            batch[param_id] = param_raw
+            batch_len += additional_len_required
+
+
 @cache
 def _id_to_max_len_map() -> dict[int, int]:
     id_to_len: dict[int, int] = {}

@@ -62,6 +62,9 @@ class ParameterType(enum.StrEnum):
     def convert_to_raw(self, value: Any) -> str:
         if value is None:
             return ""
+        if self == ParameterType.DOUBLE:
+            # must match with max_raw_len
+            return f"{value:.6f}"
         return str(value)
 
     def max_raw_len(self, max_value: int | float) -> int:
@@ -74,8 +77,8 @@ class ParameterType(enum.StrEnum):
             ):
                 return len(str(max_value))
             case ParameterType.DOUBLE:
-                # assume 3 decimal places
-                return len(f"{max_value:.3f}")
+                # teltonika seems to use 6 decimal places
+                return len(f"{max_value:.6f}")
             case ParameterType.STRING:
                 # the max_value is the max length of the string
                 return int(max_value)

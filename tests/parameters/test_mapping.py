@@ -2050,3 +2050,8 @@ _DATA = {
 def test_map_from_raw():
     data = teltek.parameters.map_raw_parameters(_RAW)
     assert data == _DATA
+
+
+def test_map_to_raw():
+    raw = teltek.parameters.map_parameters_to_raw(_DATA)
+    assert raw == _RAW
