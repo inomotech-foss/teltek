@@ -64,6 +64,22 @@ class ParameterType(enum.StrEnum):
             return ""
         return str(value)
 
+    def max_raw_len(self, max_value: Any) -> int:
+        match self:
+            case (
+                ParameterType.U8
+                | ParameterType.U16
+                | ParameterType.U32
+                | ParameterType.I32
+            ):
+                return len(str(max_value))
+            case ParameterType.DOUBLE:
+                # assume 3 decimal places
+                return len(f"{max_value:.3f}")
+            case ParameterType.STRING:
+                # the max_value is the max length of the string
+                return int(max_value)
+
 
 @dataclasses.dataclass(frozen=True)
 class ValueRange:
@@ -89,7 +105,7 @@ class Parameter:
     name: str
     value_map: list[ValueMapping] | None = None
 
-    def iter_parameter_ids(self) -> Iterator[int]:
+    def iter_ids(self) -> Iterator[int]:
         if isinstance(self.id, int):
             yield self.id
         else:
@@ -141,6 +157,9 @@ class Parameter:
                 ) from exc
         return self.type.convert_to_raw(value)
 
+    def max_raw_len(self) -> int:
+        return self.type.max_raw_len(self.value_range.max)
+
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ParameterGroup:
@@ -149,8 +168,11 @@ class ParameterGroup:
     groups: list[Self] = dataclasses.field(default_factory=list)
     parameters: list[Parameter] = dataclasses.field(default_factory=list)
 
-    def iter_parameter_ids(self) -> Iterator[int]:
+    def iter_parameters(self) -> Iterator[Parameter]:
         for group in self.groups:
-            yield from group.iter_parameter_ids()
-        for parameter in self.parameters:
-            yield from parameter.iter_parameter_ids()
+            yield from group.iter_parameters()
+        yield from self.parameters
+
+    def iter_parameter_ids(self) -> Iterator[int]:
+        for parameter in self.iter_parameters():
+            yield from parameter.iter_ids()

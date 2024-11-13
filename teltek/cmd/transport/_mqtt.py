@@ -73,7 +73,7 @@ class MqttTransport(Transport):
 
     @property
     def max_command_len(self) -> int:
-        return 500
+        return 600
 
     def _get_command_topic(self, imei: str) -> str:
         return self._command_topic.format(imei=imei)

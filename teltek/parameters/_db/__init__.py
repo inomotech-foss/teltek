@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 from ._accelerometer import ACCELEROMETER
 from ._data_acquisition_mode import DATA_ACQUISITION_MODE
@@ -11,6 +12,9 @@ from ._sms_call import SMS
 from ._system import SYSTEM
 from ._tracking_on_demand import TRACKING_ON_DEMAND
 from ._trip_odometer import TRIP_ODOMETER
+
+if TYPE_CHECKING:
+    from teltek.parameters import Parameter
 
 __all__ = [
     "ACCELEROMETER",
@@ -41,6 +45,11 @@ ALL_GROUPS = [
     TRACKING_ON_DEMAND,
     TRIP_ODOMETER,
 ]
+
+
+def iter_parameters() -> "Iterator[Parameter]":
+    for group in ALL_GROUPS:
+        yield from group.iter_parameters()
 
 
 def iter_parameter_ids() -> Iterator[int]:

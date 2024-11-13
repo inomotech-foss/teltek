@@ -20,10 +20,22 @@ class TruphoneTransport(Transport):
     _POLL_INTERVAL = 1
     _RESP_TIMEOUT = 20
 
-    def __init__(self, *, email: str, password: str) -> None:
+    def __init__(
+        self,
+        *,
+        email: str,
+        password: str,
+        device_username: str = "",
+        device_password: str = "",
+    ) -> None:
         super().__init__()
         self._email = email
         self._password = password
+        self._device_username = device_username
+        self._device_password = device_password
+        self._max_command_len = 160 - len(
+            f"{self._device_username} {self._device_password} "
+        )
         self._client = httpx.AsyncClient()
         self._reader_task: asyncio.Task[None] | None = None
         self._active_event = asyncio.Event()
@@ -53,17 +65,15 @@ class TruphoneTransport(Transport):
 
     @property
     def max_command_len(self) -> int:
-        return 160
+        return self._max_command_len
 
     async def run_command(self, device_id: DeviceId, command: str) -> str:
         assert device_id.iccid is not None, "ICCID required"
         return await self._run_command_iccid(device_id.iccid, command)
 
-    async def _run_command_iccid(
-        self, iccid: str, command: str, *, username: str = "", password: str = ""
-    ) -> str:
+    async def _run_command_iccid(self, iccid: str, command: str) -> str:
         assert iccid not in self._pending_requests
-        message = f"{username} {password} {command}"
+        message = f"{self._device_username} {self._device_password} {command}"
         (fut, _) = self._pending_requests[iccid] = (
             asyncio.Future(),
             datetime.now(tz=UTC),
