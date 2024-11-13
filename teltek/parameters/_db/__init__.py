@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 from ._accelerometer import ACCELEROMETER
 from ._data_acquisition_mode import DATA_ACQUISITION_MODE
 from ._features import FEATURES
@@ -23,6 +25,7 @@ __all__ = [
     "SYSTEM",
     "TRACKING_ON_DEMAND",
     "TRIP_ODOMETER",
+    "iter_parameter_ids",
 ]
 
 ALL_GROUPS = [
@@ -38,3 +41,8 @@ ALL_GROUPS = [
     TRACKING_ON_DEMAND,
     TRIP_ODOMETER,
 ]
+
+
+def iter_parameter_ids() -> Iterator[int]:
+    for group in ALL_GROUPS:
+        yield from group.iter_parameter_ids()

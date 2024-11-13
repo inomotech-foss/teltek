@@ -1,5 +1,5 @@
 from . import _db as db
-from ._map import map_parameters_from_raw
+from ._map import map_raw_parameters
 from ._parameter import (
     Parameter,
     ParameterGroup,
@@ -11,7 +11,7 @@ from ._parameter import (
 
 __all__ = [
     "db",
-    "map_parameters_from_raw",
+    "map_raw_parameters",
     "Parameter",
     "ParameterGroup",
     "ParameterIdRange",

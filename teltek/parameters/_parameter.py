@@ -10,6 +10,9 @@ class ParameterIdRange:
     end: int
     """inclusive"""
 
+    def __str__(self) -> str:
+        return f"{self.start}-{self.end}"
+
     def __len__(self) -> int:
         return self.end - self.start + 1
 
@@ -92,33 +95,50 @@ class Parameter:
         else:
             yield from self.id.to_range()
 
-    def map_value_to_key(self, value: int) -> str:
+    def _debug_id(self) -> str:
+        return f"{self.key} ({self.id})"
+
+    def map_value_to_key(self, value: int, *, retain: bool = False) -> str:
         if self.value_map is None:
-            raise ValueError(f"No value map for {self.key}")
+            raise ValueError(f"No value map in {self._debug_id()}")
         for mapping in self.value_map:
             if mapping.value == value:
                 return mapping.key
-        raise ValueError(f"No mapping for value {value}")
+        if retain:
+            return str(value)
+        raise ValueError(f"No mapping for value {value} in {self._debug_id()}")
 
     def map_key_to_value(self, key: str) -> int:
         if self.value_map is None:
-            raise ValueError(f"No value map for {self.key}")
+            raise ValueError(f"No value map in {self._debug_id()}")
         for mapping in self.value_map:
             if mapping.key == key:
                 return mapping.value
-        raise ValueError(f"No mapping for key {key}")
+        if key.isdigit():
+            return int(key)
+        raise ValueError(f"No mapping for key {key} in {self._debug_id()}")
 
-    def convert_from_raw(self, raw: str) -> Any:
-        value = self.type.convert_from_raw(raw)
+    def convert_from_raw(self, raw: str, *, lenient: bool = False) -> Any:
+        try:
+            value = self.type.convert_from_raw(raw)
+        except Exception as exc:
+            raise ValueError(
+                f"Failed to convert {raw} to {self.type} in {self._debug_id()}"
+            ) from exc
         if value is None:
             return None
         if self.value_map is not None:
-            return self.map_value_to_key(value)
+            return self.map_value_to_key(value, retain=lenient)
         return value
 
     def convert_to_raw(self, value: Any) -> str:
         if self.value_map is not None:
-            value = self.map_key_to_value(value)
+            try:
+                value = self.map_key_to_value(value)
+            except Exception as exc:
+                raise ValueError(
+                    f"Failed to convert {value} to {self.type} in {self._debug_id()}"
+                ) from exc
         return self.type.convert_to_raw(value)
 
 

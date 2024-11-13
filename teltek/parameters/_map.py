@@ -4,7 +4,7 @@ import teltek.parameters._db as db
 from teltek.parameters._parameter import Parameter, ParameterGroup, ParameterIdRange
 
 
-def map_parameters_from_raw(raw: dict[int, str]) -> dict[str, Any]:
+def map_raw_parameters(raw: dict[int, str]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for group in db.ALL_GROUPS:
         group_out = _map_group(group, raw)
