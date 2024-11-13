@@ -1,10 +1,9 @@
-import itertools
 import logging
-import math
 from collections.abc import Iterable
 from typing import Any
 
 import teltek.parameters
+from teltek.cmd._batcher import iter_param_batches
 from teltek.cmd._device_id import DeviceId
 from teltek.cmd.transport import Transport
 
@@ -18,22 +17,20 @@ class CommandClient:
     async def get_full_parameters(self, device_id: DeviceId) -> dict[str, Any]:
         param_ids = list(teltek.parameters.db.iter_parameter_ids())
         raw_params = await self.get_raw_parameters(device_id, param_ids)
-        print(raw_params)
         return teltek.parameters.map_raw_parameters(raw_params)
 
     async def get_raw_parameters(
         self, device_id: DeviceId, param_ids: Iterable[int]
     ) -> dict[int, str]:
-        batch_size = math.ceil(self._transport.max_command_len / 8)
+        batches = list(iter_param_batches(param_ids, self._transport.max_command_len))
+        param_count = sum(len(batch) for batch in batches)
+        _LOGGER.info(
+            "requesting %s parameter(s) in %d batches", param_count, len(batches)
+        )
 
         params: dict[int, str] = {}
-        try:
-            batch_count = math.ceil(len(param_ids) / batch_size)  # type: ignore
-        except Exception:
-            batch_count = "unknown"
-
-        for i, batch in enumerate(itertools.batched(param_ids, batch_size)):
-            _LOGGER.debug("getting batch %d/%s", i + 1, batch_count)
+        for i, batch in enumerate(batches):
+            _LOGGER.debug("getting batch %d/%s", i + 1, len(batches))
             batch_params = await self._get_raw_parameters_batch(device_id, *batch)
             params.update(batch_params)
         return params
