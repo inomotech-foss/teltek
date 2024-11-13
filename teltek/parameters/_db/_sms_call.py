@@ -51,11 +51,13 @@ _PARAMETERS2: list[Parameter] = [
     Parameter(
         key="sms_event_time_zone",
         id=3006,
-        type=ParameterType.U16,  # TODO: is this true?
-        default_value="UTC+00:00",
+        type=ParameterType.U16,
+        default_value=0,
         value_range=ValueRange(
-            "UTC-12:00",
-            "UTC+13:00",
+            # "UTC-12:00",
+            -720,
+            # "UTC+13:00",
+            780,
         ),
         name="SMS event Time Zone",
     ),
