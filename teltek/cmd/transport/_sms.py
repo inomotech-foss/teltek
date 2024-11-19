@@ -1,6 +1,7 @@
 import asyncio
 import dataclasses
 import logging
+from collections.abc import AsyncGenerator, Generator
 from datetime import UTC, datetime
 from types import TracebackType
 from typing import Any, Literal, Self
@@ -15,7 +16,6 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class TruphoneTransport(Transport):
-    _ACCOUNT_BASE_URL = "https://account.truphone.com"
     _IOT_BASE_URL = "https://iot.truphone.com"
     _POLL_INTERVAL = 1
     _RESP_TIMEOUT = 20
@@ -29,14 +29,12 @@ class TruphoneTransport(Transport):
         device_password: str = "",
     ) -> None:
         super().__init__()
-        self._email = email
-        self._password = password
         self._device_username = device_username
         self._device_password = device_password
         self._max_command_len = 160 - len(
             f"{self._device_username} {self._device_password} "
         )
-        self._client = httpx.AsyncClient()
+        self._client = httpx.AsyncClient(auth=_TruphoneAuth(email, password))
         self._reader_task: asyncio.Task[None] | None = None
         self._active_event = asyncio.Event()
         self._pending_requests: dict[str, tuple[asyncio.Future[str], datetime]] = {}
@@ -45,7 +43,6 @@ class TruphoneTransport(Transport):
     async def __aenter__(self) -> Self:
         assert self._reader_task is None
         self._client = await self._client.__aenter__()
-        await self._login()
         self._reader_task = asyncio.create_task(self.__reader())
         return self
 
@@ -85,33 +82,6 @@ class TruphoneTransport(Transport):
         finally:
             self._pending_requests.pop(iccid)
 
-    async def _get_csrf_token(self, html: str) -> str:
-        doc = bs4.BeautifulSoup(html, "lxml")
-        input_el = doc.select_one('input[name="csrfmiddlewaretoken"]')
-        if input_el is None:
-            raise ValueError("No CSRF token found")
-        csrf_token = input_el["value"]
-        assert isinstance(csrf_token, str)
-        return csrf_token
-
-    async def _login(self) -> None:
-        url = f"{self._ACCOUNT_BASE_URL}/login"
-        resp = await self._client.get(url)
-        csrf_token = await self._get_csrf_token(resp.text)
-        _LOGGER.debug("Logging in with CSRF token %s", csrf_token)
-        resp = await self._client.post(
-            url,
-            data={
-                "email": self._email,
-                "password": self._password,
-                "csrfmiddlewaretoken": csrf_token,
-            },
-        )
-        if resp.status_code == 302:
-            _LOGGER.info("Successfully logged in")
-            return
-        resp.raise_for_status()
-
     async def _get_sms_response(
         self, *, start: int = 0, length: int = 50
     ) -> "_SmsResponse":
@@ -137,7 +107,7 @@ class TruphoneTransport(Transport):
     ) -> None:
         url = f"{self._IOT_BASE_URL}/sms/"
         resp = await self._client.get(url)
-        csrf_token = await self._get_csrf_token(resp.text)
+        csrf_token = _get_csrf_token(resp.text)
         _LOGGER.debug("Sending SMS with CSRF token %s", csrf_token)
         resp = await self._client.post(
             url,
@@ -194,6 +164,81 @@ class TruphoneTransport(Transport):
                     _LOGGER.exception("failed to poll")
 
             self._active_event.clear()
+
+
+class _TruphoneAuth(httpx.Auth):
+    _ACCOUNT_BASE_URL = "https://account.truphone.com"
+
+    def __init__(self, email: str, password: str) -> None:
+        self._email = email
+        self._password = password
+        self._lock = asyncio.Lock()
+        self._cookies: httpx.Cookies | None = None
+
+    def _login(self) -> Generator[httpx.Request, httpx.Response, None]:
+        url = f"{self._ACCOUNT_BASE_URL}/login"
+        resp = yield httpx.Request("GET", url)
+        csrf_token = _get_csrf_token(resp.text)
+
+        _LOGGER.debug("Logging in with CSRF token %s", csrf_token)
+        resp = yield httpx.Request(
+            "POST",
+            url,
+            data={
+                "email": self._email,
+                "password": self._password,
+                "csrfmiddlewaretoken": csrf_token,
+            },
+            cookies=resp.cookies,
+        )
+        if resp.status_code != 302:
+            resp.raise_for_status()
+        _LOGGER.info("Successfully logged in")
+        self._cookies = resp.cookies
+
+    async def async_auth_flow(
+        self, request: httpx.Request
+    ) -> AsyncGenerator[httpx.Request, httpx.Response]:
+        async with self._lock:
+            if (cookies := self._cookies) is not None:
+                cookies.set_cookie_header(request)
+            resp = yield request
+            if not _is_login_redirect(resp):
+                return
+
+            _LOGGER.debug("Performing login")
+            gen = self._login()
+            req = next(gen)
+            while True:
+                resp = yield req
+                await resp.aread()
+                try:
+                    req = gen.send(resp)
+                except StopIteration:
+                    break
+
+        assert self._cookies is not None
+        self._cookies.set_cookie_header(request)
+        resp = yield request
+        if _is_login_redirect(resp):
+            raise RuntimeError("login failed")
+
+
+def _get_csrf_token(html: str) -> str:
+    doc = bs4.BeautifulSoup(html, "lxml")
+    input_el = doc.select_one('input[name="csrfmiddlewaretoken"]')
+    if input_el is None:
+        raise ValueError("No CSRF token found")
+    csrf_token = input_el["value"]
+    assert isinstance(csrf_token, str)
+    return csrf_token
+
+
+def _is_login_redirect(resp: httpx.Response) -> bool:
+    if not resp.has_redirect_location:
+        return False
+    location = resp.headers["location"]
+    return "/login" in location
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
