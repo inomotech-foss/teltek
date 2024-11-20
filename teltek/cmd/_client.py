@@ -91,6 +91,8 @@ class CommandClient:
                 raise ValueError(f"Failed to parse param {rest_param!r}") from exc
             params[param_id] = param_value
 
+        _ensure_param_ids_match(param_ids, params.keys())
+
         return params
 
     async def _set_raw_parameters_batch(
@@ -108,10 +110,22 @@ class CommandClient:
         last_exc: Exception | None = None
         for _ in range(retry + 1):
             if last_exc:
-                _LOGGER.warning("retrying command")
+                _LOGGER.warning("%s: retrying command", device_id)
             try:
                 return await self._transport.run_command(device_id, command)
             except Exception as exc:
                 last_exc = exc
         assert last_exc is not None
         raise last_exc
+
+
+def _ensure_param_ids_match(requested: Iterable[int], received: Iterable[int]) -> bool:
+    requested_set = set(requested)
+    received_set = set(received)
+    if extra := received_set - requested_set:
+        _LOGGER.warning(
+            "Received additional parameters that weren't requested %s", extra
+        )
+    if missing := requested_set - received_set:
+        _LOGGER.warning("Requested parameters that weren't received %s", missing)
+    return not (extra or missing)
