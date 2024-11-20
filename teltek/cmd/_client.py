@@ -20,9 +20,21 @@ class CommandClient:
         return teltek.parameters.map_raw_parameters(raw_params)
 
     async def set_full_parameters(
-        self, device_id: DeviceId, values: dict[str, Any]
+        self,
+        device_id: DeviceId,
+        values: dict[str, Any],
+        *,
+        old_values: dict[str, Any] | None = None,
     ) -> None:
         raw_values = teltek.parameters.map_parameters_to_raw(values)
+        if old_values:
+            old_raw_values = teltek.parameters.map_parameters_to_raw(old_values)
+            # Only set parameters that have changed
+            raw_values = {
+                id: raw
+                for id, raw in raw_values.items()
+                if old_raw_values.get(id) != raw
+            }
         await self.set_raw_parameters(device_id, raw_values)
 
     async def get_raw_parameters(
@@ -128,4 +140,5 @@ def _ensure_param_ids_match(requested: Iterable[int], received: Iterable[int]) -
         )
     if missing := requested_set - received_set:
         _LOGGER.warning("Requested parameters that weren't received %s", missing)
+        _LOGGER.debug("Requested: %s", requested)
     return not (extra or missing)
