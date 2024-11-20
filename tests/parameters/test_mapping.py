@@ -1,5 +1,16 @@
 import teltek.parameters
 
+
+def test_bitflag():
+    movement_source = next(
+        param
+        for param in teltek.parameters.db.iter_parameters()
+        if param.key == "movement_source"
+    )
+    assert movement_source.convert_from_raw("3") == "IGNITION|MOVEMENT"
+    assert movement_source.convert_to_raw("IGNITION|MOVEMENT") == "3"
+
+
 _RAW = {
     11500: "2",
     11501: "1",

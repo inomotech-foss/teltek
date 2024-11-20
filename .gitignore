@@ -1,5 +1,4 @@
 *.pyc
 
-/run.py
 /.env
 /output/

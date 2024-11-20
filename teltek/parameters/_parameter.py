@@ -106,6 +106,7 @@ class Parameter:
     value_range: ValueRange
     """for string type, min and max are the length of the string"""
     name: str
+    value_is_bitflag: bool = False
     value_map: list[ValueMapping] | None = None
 
     def iter_ids(self) -> Iterator[int]:
@@ -120,6 +121,14 @@ class Parameter:
     def map_value_to_key(self, value: int, *, retain: bool = False) -> str:
         if self.value_map is None:
             raise ValueError(f"No value map in {self._debug_id()}")
+        if self.value_is_bitflag:
+            keys: list[str] = []
+            for mapping in self.value_map:
+                if mapping.value & value:
+                    keys.append(mapping.key)
+            if keys:
+                return "|".join(keys)
+
         for mapping in self.value_map:
             if mapping.value == value:
                 return mapping.key
@@ -130,12 +139,22 @@ class Parameter:
     def map_key_to_value(self, key: str) -> int:
         if self.value_map is None:
             raise ValueError(f"No value map in {self._debug_id()}")
-        for mapping in self.value_map:
-            if mapping.key == key:
-                return mapping.value
-        if key.isdigit():
-            return int(key)
-        raise ValueError(f"No mapping for key {key} in {self._debug_id()}")
+        value = 0
+        parts = key.split("|") if self.value_is_bitflag else [key]
+        for part in parts:
+            found = False
+            for mapping in self.value_map:
+                if mapping.key == part:
+                    value += mapping.value
+                    found = True
+                    break
+            if found:
+                continue
+            if part.isdigit():
+                value += int(part)
+                continue
+            raise ValueError(f"No mapping for key {part} in {self._debug_id()}")
+        return value
 
     def convert_from_raw(self, raw: str, *, lenient: bool = False) -> Any:
         try:

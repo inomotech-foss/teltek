@@ -12,8 +12,9 @@ _PARAMETERS1: list[Parameter] = [
         id=138,
         type=ParameterType.U8,
         default_value=0,
-        value_range=ValueRange(0, 2),
+        value_range=ValueRange(0, 4),
         name="Movement source",
+        value_is_bitflag=True,
         value_map=[
             ValueMapping("IGNITION", 1, "Ignition"),
             ValueMapping("MOVEMENT", 2, "Movement"),
