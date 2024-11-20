@@ -31,12 +31,15 @@ class CommandClient:
         batches = list(iter_param_batches(param_ids, self._transport.max_command_len))
         param_count = sum(len(batch) for batch in batches)
         _LOGGER.info(
-            "requesting %s parameter(s) in %d batches", param_count, len(batches)
+            "%s: requesting %s parameter(s) in %d batches",
+            device_id,
+            param_count,
+            len(batches),
         )
 
         params: dict[int, str] = {}
         for i, batch in enumerate(batches):
-            _LOGGER.debug("getting batch %d/%s", i + 1, len(batches))
+            _LOGGER.debug("%s: getting batch %d/%s", device_id, i + 1, len(batches))
             batch_params = await self._get_raw_parameters_batch(device_id, *batch)
             params.update(batch_params)
         return params
@@ -48,10 +51,15 @@ class CommandClient:
             iter_set_param_batches(params.items(), self._transport.max_command_len)
         )
         param_count = sum(len(batch) for batch in batches)
-        _LOGGER.info("setting %s parameter(s) in %d batches", param_count, len(batches))
+        _LOGGER.info(
+            "%s: setting %s parameter(s) in %d batches",
+            device_id,
+            param_count,
+            len(batches),
+        )
 
         for i, batch in enumerate(batches):
-            _LOGGER.debug("setting batch %d/%s", i + 1, len(batches))
+            _LOGGER.debug("%s: setting batch %d/%s", device_id, i + 1, len(batches))
             await self._set_raw_parameters_batch(device_id, batch)
 
     async def _get_raw_parameters_batch(
