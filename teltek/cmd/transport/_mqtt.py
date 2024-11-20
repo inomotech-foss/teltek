@@ -14,6 +14,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class MqttTransport(Transport):
+    _RESP_TIMEOUT = 15
+
     def __init__(
         self,
         client: Client,
@@ -66,7 +68,7 @@ class MqttTransport(Transport):
         fut = self._pending_requests[imei] = asyncio.Future()
         try:
             await self._client.publish(command_topic, req_frame.encode())
-            response = await asyncio.wait_for(fut, timeout=20)
+            response = await asyncio.wait_for(fut, timeout=self._RESP_TIMEOUT)
             return response.content
         finally:
             self._pending_requests.pop(imei)

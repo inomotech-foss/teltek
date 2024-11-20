@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import Iterable
 from typing import Any
@@ -38,7 +39,11 @@ class CommandClient:
         await self.set_raw_parameters(device_id, raw_values)
 
     async def get_raw_parameters(
-        self, device_id: DeviceId, param_ids: Iterable[int]
+        self,
+        device_id: DeviceId,
+        param_ids: Iterable[int],
+        *,
+        attempts_per_batch: int = 3,
     ) -> dict[int, str]:
         batches = list(iter_param_batches(param_ids, self._transport.max_command_len))
         param_count = sum(len(batch) for batch in batches)
@@ -50,14 +55,41 @@ class CommandClient:
         )
 
         params: dict[int, str] = {}
-        for i, batch in enumerate(batches):
-            _LOGGER.debug("%s: getting batch %d/%s", device_id, i + 1, len(batches))
-            batch_params = await self._get_raw_parameters_batch(device_id, *batch)
-            params.update(batch_params)
+        for batch_nr, batch in enumerate(batches, 1):
+            _LOGGER.debug("%s: getting batch %d/%d", device_id, batch_nr, len(batches))
+            last_exc = None
+            for attempt in range(1, attempts_per_batch + 1):
+                if last_exc:
+                    _LOGGER.warning(
+                        "%s: retrying batch %d (attempt %d/%d)",
+                        device_id,
+                        batch_nr,
+                        attempt,
+                        attempts_per_batch,
+                    )
+                try:
+                    batch_params = await self._get_raw_parameters_batch(
+                        device_id, *batch
+                    )
+                except asyncio.TimeoutError:
+                    raise
+                except Exception as exc:
+                    last_exc = exc
+                else:
+                    last_exc = None
+                    params.update(batch_params)
+                    break
+            if last_exc:
+                raise last_exc
+
         return params
 
     async def set_raw_parameters(
-        self, device_id: DeviceId, params: dict[int, str]
+        self,
+        device_id: DeviceId,
+        params: dict[int, str],
+        *,
+        attempts_per_batch: int = 3,
     ) -> None:
         batches = list(
             iter_set_param_batches(params.items(), self._transport.max_command_len)
@@ -70,12 +102,35 @@ class CommandClient:
             len(batches),
         )
 
-        for i, batch in enumerate(batches):
-            _LOGGER.debug("%s: setting batch %d/%s", device_id, i + 1, len(batches))
-            await self._set_raw_parameters_batch(device_id, batch)
+        for batch_nr, batch in enumerate(batches, 1):
+            _LOGGER.debug("%s: setting batch %d/%d", device_id, batch_nr, len(batches))
+            last_exc = None
+            for attempt in range(1, attempts_per_batch + 1):
+                if last_exc:
+                    _LOGGER.warning(
+                        "%s: retrying batch %d (attempt %d/%d)",
+                        device_id,
+                        batch_nr,
+                        attempt,
+                        attempts_per_batch,
+                    )
+
+                try:
+                    await self._set_raw_parameters_batch(device_id, batch)
+                except asyncio.TimeoutError:
+                    raise
+                except Exception as exc:
+                    last_exc = exc
+                else:
+                    last_exc = None
+                    break
+            if last_exc:
+                raise last_exc
 
     async def _get_raw_parameters_batch(
-        self, device_id: DeviceId, *param_ids: int
+        self,
+        device_id: DeviceId,
+        *param_ids: int,
     ) -> dict[int, str]:
         response = await self.run_command(
             device_id, "getparam " + ";".join(map(str, param_ids))
@@ -108,7 +163,9 @@ class CommandClient:
         return params
 
     async def _set_raw_parameters_batch(
-        self, device_id: DeviceId, params: dict[int, str]
+        self,
+        device_id: DeviceId,
+        params: dict[int, str],
     ) -> None:
         await self.run_command(
             device_id,
@@ -116,13 +173,22 @@ class CommandClient:
         )
 
     async def run_command(
-        self, device_id: DeviceId, command: str, *, retry: int = 2
+        self,
+        device_id: DeviceId,
+        command: str,
+        *,
+        attempts: int = 3,
     ) -> str:
-        assert retry >= 0
+        assert attempts >= 1
         last_exc: Exception | None = None
-        for _ in range(retry + 1):
+        for attempt in range(1, attempts + 1):
             if last_exc:
-                _LOGGER.warning("%s: retrying command", device_id)
+                _LOGGER.warning(
+                    "%s: retrying command (attempt %s/%s)",
+                    device_id,
+                    attempt,
+                    attempts,
+                )
             try:
                 return await self._transport.run_command(device_id, command)
             except Exception as exc:
@@ -134,6 +200,8 @@ class CommandClient:
 def _ensure_param_ids_match(requested: Iterable[int], received: Iterable[int]) -> bool:
     requested_set = set(requested)
     received_set = set(received)
+    if requested_set.isdisjoint(received_set):
+        raise ValueError("Parameter response doesn't match request")
     if extra := received_set - requested_set:
         _LOGGER.warning(
             "Received additional parameters that weren't requested %s", extra
