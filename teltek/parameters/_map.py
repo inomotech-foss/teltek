@@ -1,28 +1,41 @@
+import logging
 from typing import Any, cast
 
 import teltek.parameters._db as db
 from teltek.parameters._parameter import Parameter, ParameterGroup, ParameterIdRange
 
+_LOGGER = logging.getLogger(__name__)
+
 
 def map_raw_parameters(raw: dict[int, str]) -> dict[str, Any]:
     out: dict[str, Any] = {}
+    param_ids_used: set[int] = set()
     for group in db.ALL_GROUPS:
-        group_out = _map_group(group, raw)
+        group_out = _map_group(group, raw, param_ids_used=param_ids_used)
         if group_out:
             out[group.key] = group_out
+    missing_ids = set(raw) - param_ids_used
+    if missing_ids:
+        _LOGGER.warning("Unused parameter IDs: %s", missing_ids)
     return out
 
 
-def _map_group(group: ParameterGroup, raw: dict[int, str]) -> dict[str, Any]:
+def _map_group(
+    group: ParameterGroup,
+    raw: dict[int, str],
+    *,
+    param_ids_used: set[int],
+) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for subgroup in group.groups:
-        subgroup_out = _map_group(subgroup, raw)
+        subgroup_out = _map_group(subgroup, raw, param_ids_used=param_ids_used)
         if subgroup_out:
             out[subgroup.key] = subgroup_out
     for parameter in group.parameters:
         value = _map_parameter(parameter, raw)
         if value is not None:
             out[parameter.key] = value
+            param_ids_used.update(parameter.iter_ids())
     return out
 
 
@@ -58,7 +71,10 @@ def map_parameters_to_raw(values: dict[str, Any]) -> dict[int, str]:
 
 
 def _map_group_to_raw(
-    group: ParameterGroup, values: dict[str, Any], out: dict[int, str]
+    group: ParameterGroup,
+    values: dict[str, Any],
+    *,
+    out: dict[int, str],
 ) -> None:
     for subgroup in group.groups:
         subgroup_values = values.get(subgroup.key)
@@ -72,6 +88,7 @@ def _map_group_to_raw(
 def _map_parameter_to_raw(
     param: Parameter,
     values: dict[str, Any],
+    *,
     out: dict[int, str],
 ) -> None:
     if not isinstance(param.id, ParameterIdRange):
