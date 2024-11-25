@@ -22,18 +22,24 @@ class ParameterIdRange:
 
 class ParameterType(enum.StrEnum):
     U8 = "Uint8"
+    I8 = "Int8"
     U16 = "Uint16"
+    I16 = "Int16"
     U32 = "Uint32"
     I32 = "Int32"
+    U64 = "Uint64"
     DOUBLE = "Double"
     STRING = "String"
 
     def is_integer(self) -> bool:
         return self in {
             ParameterType.U8,
+            ParameterType.I8,
             ParameterType.U16,
+            ParameterType.I16,
             ParameterType.U32,
             ParameterType.I32,
+            ParameterType.U64,
         }
 
     def is_numeric(self) -> bool:
@@ -47,9 +53,12 @@ class ParameterType(enum.StrEnum):
         match self:
             case (
                 ParameterType.U8
+                | ParameterType.I8
                 | ParameterType.U16
+                | ParameterType.I16
                 | ParameterType.U32
                 | ParameterType.I32
+                | ParameterType.U64
             ):
                 f = float(raw)
                 i = int(f)
@@ -71,9 +80,12 @@ class ParameterType(enum.StrEnum):
         match self:
             case (
                 ParameterType.U8
+                | ParameterType.I8
                 | ParameterType.U16
+                | ParameterType.I16
                 | ParameterType.U32
                 | ParameterType.I32
+                | ParameterType.U64
             ):
                 return len(str(max_value))
             case ParameterType.DOUBLE:

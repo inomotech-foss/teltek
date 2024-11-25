@@ -1,5 +1,6 @@
 from . import _db as db
-from ._map import map_raw_parameters, map_parameters_to_raw
+from ._config import Config
+from ._map import map_parameters_to_raw, map_raw_parameters
 from ._parameter import (
     Parameter,
     ParameterGroup,
@@ -19,4 +20,5 @@ __all__ = [
     "ParameterType",
     "ValueMapping",
     "ValueRange",
+    "Config",
 ]
