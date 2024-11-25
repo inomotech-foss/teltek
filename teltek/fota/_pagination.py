@@ -20,7 +20,9 @@ class PaginatedData[T]:
 
     @classmethod
     def from_dict[D: _FromDict](
-        cls, item_cls: type[D], data: dict[str, Any]
+        cls,
+        item_cls: type[D],
+        data: dict[str, Any],
     ) -> "PaginatedData[D]":
         return PaginatedData(
             current_page=int(data["current_page"]),

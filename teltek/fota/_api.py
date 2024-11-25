@@ -5,6 +5,7 @@ from typing import Literal, Self
 import httpx
 
 from teltek.fota._device import Device
+from teltek.fota._file import FileType
 from teltek.fota._pagination import PaginatedData
 
 
@@ -26,6 +27,29 @@ class FotaApi:
         traceback: TracebackType | None,
     ) -> bool | None:
         return await self._client.__aexit__(exc_type, exc_value, traceback)
+
+    async def _upload_file(
+        self,
+        *,
+        type: FileType,
+        description: str | None = None,
+    ) -> None:
+        # TODO
+        data = {
+            key: value
+            for key, value in (
+                ("company_ids", ["TODO"]),
+                ("type", type.value),
+                ("description", description),
+            )
+            if value is not None
+        }
+        resp = await self._client.post(
+            "/files",
+            data=data,
+            files={"file": "TODO"},
+        )
+        resp.raise_for_status()
 
     async def iter_devices(self) -> AsyncIterable[Device]:
         page_data = await self.devices_page(page=1)
