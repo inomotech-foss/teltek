@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from typing import Any
 
 import teltek.parameters
+from teltek.cmd._accelerometer import AccelCalibrationInfo
 from teltek.cmd._batcher import iter_param_batches, iter_set_param_batches
 from teltek.cmd._device_id import DeviceId
 from teltek.cmd.transport import Transport
@@ -14,6 +15,12 @@ _LOGGER = logging.getLogger(__name__)
 class CommandClient:
     def __init__(self, transport: Transport) -> None:
         self._transport = transport
+
+    async def get_accelerometer_auto_calibration(
+        self, device_id: DeviceId
+    ) -> AccelCalibrationInfo:
+        resp = await self.run_command(device_id, "auto_calibrate:get")
+        return AccelCalibrationInfo.parse(resp)
 
     async def get_full_parameters(self, device_id: DeviceId) -> dict[str, Any]:
         param_ids = list(teltek.parameters.db.iter_parameter_ids())
