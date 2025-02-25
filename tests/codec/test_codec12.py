@@ -12,8 +12,11 @@ def test_decode_response():
         "312053523A302042523A302043463A302046473A3020464C3A302054553A302F302055543A3020534D533A30204E4F4750533A303A3330204750533A312053"
         "41543A302052533A332052463A36352053463A31204D443A30010000C78F"
     )
-    expected = "INI:2019/7/22 7:22 RTC:2019/7/22 7:53 RST:2 ERR:1 SR:0 BR:0 CF:0 FG:0 FL:0 TU:0/0 UT:0 SMS:0 NOGPS:0:30 GPS:1 SAT:0 RS:3 RF:65 SF:1 MD:0"
-    assert _decode_request(raw) == expected
+    expected = Codec12(
+        type=Codec12Type.RESPONSE,
+        content="INI:2019/7/22 7:22 RTC:2019/7/22 7:53 RST:2 ERR:1 SR:0 BR:0 CF:0 FG:0 FL:0 TU:0/0 UT:0 SMS:0 NOGPS:0:30 GPS:1 SAT:0 RS:3 RF:65 SF:1 MD:0",
+    )
+    assert _decode_frame(raw) == expected
 
 
 def _encode_request(command: str) -> bytes:
@@ -21,9 +24,7 @@ def _encode_request(command: str) -> bytes:
     return msg.to_frame().encode()
 
 
-def _decode_request(data: bytes) -> str:
+def _decode_frame(data: bytes) -> Codec12:
     frame = MessageFrame.decode(data)
     assert frame.codec_id == CodecId.CODEC_12
-    msg = Codec12.from_frame(frame)
-    assert msg.type == Codec12Type.RESPONSE
-    return msg.content
+    return Codec12.from_frame(frame)
