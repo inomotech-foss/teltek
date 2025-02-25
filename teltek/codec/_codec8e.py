@@ -35,6 +35,11 @@ class Codec8e:
             avl_data.append(data)
             remaining_body = remaining_body[consumed:]
 
+        if remaining_body:
+            raise CodecException(
+                f"leftover bytes after decoding codec8e: {remaining_body!r}"
+            )
+
         return cls(avl_data=avl_data)
 
     def to_frame(self) -> MessageFrame:
@@ -123,6 +128,11 @@ class Codec8eIoElement:
 
     @classmethod
     def decode(cls, body: bytes) -> tuple[Self, int]:
+        if len(body) < 4:
+            raise CodecException(
+                f"expected at least 4 bytes for io element but got {len(body)}"
+            )
+
         event_io_id = int.from_bytes(body[0:2], "big")
         total_count = int.from_bytes(body[2:4], "big")
 
@@ -149,6 +159,12 @@ class Codec8eIoElement:
     @staticmethod
     def _decode_fixed_io(remaining: bytes, n: int) -> tuple[dict[int, int], int]:
         count = int.from_bytes(remaining[0:2], "big")
+        required_len = 2 + count * (2 + n)
+        if len(remaining) < required_len:
+            raise CodecException(
+                f"expected at least {required_len} bytes for fixed io (n={n}) but got {len(remaining)}"
+            )
+
         offset = 2
         ios: dict[int, int] = {}
         for _ in range(count):
@@ -167,11 +183,18 @@ class Codec8eIoElement:
         for _ in range(count):
             id = int.from_bytes(remaining[offset : offset + 2], "big")
             offset += 2
-            len = int.from_bytes(remaining[offset : offset + 2], "big")
+            value_len = int.from_bytes(remaining[offset : offset + 2], "big")
             offset += 2
-            value = remaining[offset : offset + len]
-            offset += len
+            value = remaining[offset : offset + value_len]
+            offset += value_len
+
+            if len(value) != value_len:
+                raise CodecException(
+                    f"expected {value_len} byte(s) for dynamic io value, got {len(value)}"
+                )
+
             ios[id] = value
+
         return ios, offset
 
 
