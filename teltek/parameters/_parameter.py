@@ -121,6 +121,13 @@ class Parameter:
     value_is_bitflag: bool = False
     value_map: list[ValueMapping] | None = None
 
+    def __post_init__(self) -> None:
+        if self.value_map is not None:
+            min_value = min(mapping.value for mapping in self.value_map)
+            max_value = max(mapping.value for mapping in self.value_map)
+            assert self.value_range.min <= min_value
+            assert self.value_range.max >= max_value
+
     def iter_ids(self) -> Iterator[int]:
         if isinstance(self.id, int):
             yield self.id
