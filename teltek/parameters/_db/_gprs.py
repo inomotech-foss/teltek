@@ -73,6 +73,18 @@ _PARAMETERS2: list[Parameter] = [
         value_range=ValueRange(0, 32),
         name="APN password",
     ),
+    Parameter(
+        key="auto_apn",
+        id=2025,
+        type=ParameterType.U8,
+        default_value=0,
+        value_range=ValueRange(0, 1),
+        name="Auto APN",
+        value_map=[
+            ValueMapping("DISABLE", 0, "Disable"),
+            ValueMapping("ENABLE", 1, "Enable"),
+        ],
+    ),
 ]
 _PARAMETERS3: list[Parameter] = [
     Parameter(

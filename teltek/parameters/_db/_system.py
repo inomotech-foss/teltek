@@ -142,7 +142,7 @@ _PARAMETERS2: list[Parameter] = [
         id=102,
         type=ParameterType.U8,
         default_value=2,
-        value_range=ValueRange(0, 2),
+        value_range=ValueRange(0, 4),
         name="Sleep settings",
         value_map=[
             ValueMapping("DISABLE", 0, "Disable"),

@@ -88,10 +88,11 @@ def event_only(id: int) -> Parameter:
         id=id,
         type=ParameterType.U8,
         default_value=0,
-        value_range=ValueRange(0, 1),
+        value_range=ValueRange(0, 2),
         value_map=[
             ValueMapping("DISABLE", 0, "Disable"),
             ValueMapping("ENABLE", 1, "Enable"),
+            ValueMapping("CRASH", 2, "Crash"),
         ],
         name="Event only",
     )
