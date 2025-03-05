@@ -12,11 +12,10 @@ class Config:
     configuration_version: str
     hw_version: str
     title: str
-    min_configurator_version: str
     fm_type: str
     spec_id: int
-
     raw_parameters: dict[int, str]
+    min_configurator_version: str | None = None
 
     @classmethod
     def _from_pairs(cls, pairs: Iterable[tuple[str, str]]) -> Self:
@@ -48,7 +47,8 @@ class Config:
         yield "ConfigurationVersion", self.configuration_version
         yield "HwVersion", self.hw_version
         yield "Title", self.title
-        yield "MinConfiguratorVersion", self.min_configurator_version
+        if self.min_configurator_version is not None:
+            yield "MinConfiguratorVersion", self.min_configurator_version
         yield "FmType", self.fm_type
         yield "SpecId", str(self.spec_id)
         for param_id, value in self.raw_parameters.items():
