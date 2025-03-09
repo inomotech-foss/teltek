@@ -199,8 +199,32 @@ _PARAMETERS5: list[Parameter] = [
     ),
 ]
 
+_MQTT_PARAMETERS: list[Parameter] = [
+    Parameter(
+        key="mqtt_data_topic",
+        id=67100,
+        type=ParameterType.STRING,
+        default_value="",
+        value_range=ValueRange(0, 255),  # TODO: unknown what the max is
+        name="MQTT Data Topic",
+    ),
+    Parameter(
+        key="mqtt_command_topic",
+        id=67101,
+        type=ParameterType.STRING,
+        default_value="",
+        value_range=ValueRange(0, 255),  # TODO: unknown what the max is
+        name="MQTT Command Topic",
+    ),
+]
+
 GPRS = ParameterGroup(
     key="gprs",
     name="GPRS",
-    parameters=_PARAMETERS1 + _PARAMETERS2 + _PARAMETERS3 + _PARAMETERS4 + _PARAMETERS5,
+    parameters=_PARAMETERS1
+    + _PARAMETERS2
+    + _PARAMETERS3
+    + _PARAMETERS4
+    + _PARAMETERS5
+    + _MQTT_PARAMETERS,
 )
